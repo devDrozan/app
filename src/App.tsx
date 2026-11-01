@@ -8,6 +8,7 @@ import { ApiFailure, calculate, getContext, type Calculation, type CalculationIn
 import { employmentSchema, type EmploymentValues, validMoney, validCalendarDate, dateLabel, reviewMoney } from './validation';
 import { Info, Sources } from './Info';
 import { ResultDetails, ResultSummary } from './Result';
+import { SalaryEstimate } from './salary/SalaryEstimate';
 
 type Method = ContextInput['method'];
 type WageRow = { startDate: string; endDate: string; basePay: string; allowances: string };
@@ -26,7 +27,7 @@ function CardHeading({ number, title, sub }: { number: string; title: string; su
 
 export default function App() {
   const { t, i18n } = useTranslation();
-  const [view, setView] = useState<'calculator' | 'guide' | 'insurance'>('calculator');
+  const [view, setView] = useState<'calculator' | 'guide' | 'insurance' | 'salaryNav'>('calculator');
   const [method, setMethod] = useState<Method>('normal');
   const [step, setStep] = useState(0);
   const [context, setContext] = useState<Context>();
@@ -154,7 +155,7 @@ export default function App() {
   }
   const fmtDate = (v: string) => dateLabel(v, i18n.language);
   const nextButton = (label: string, onClick?: () => void, type: 'button' | 'submit' = 'button') => <button className="button primary" type={type} onClick={onClick} disabled={busy || offline}>{busy ? t('working') : label}<ArrowRight size={17} /></button>;
-  const navItems = [{ key: 'calculator' as const, icon: Calculator }, { key: 'guide' as const, icon: BookOpen }, { key: 'insurance' as const, icon: ShieldCheck }];
+  const navItems = [{ key: 'calculator' as const, icon: Calculator }, { key: 'guide' as const, icon: BookOpen }, { key: 'insurance' as const, icon: ShieldCheck }, { key: 'salaryNav' as const, icon: CalendarDays }];
 
   let panel: ReactNode;
   if (step === 0) panel = <form onSubmit={form.handleSubmit(v => run(() => prepare(v)))} noValidate>
@@ -191,7 +192,7 @@ export default function App() {
   else panel = result && <div data-step-focus tabIndex={-1} role="region" aria-label={t('result')}><div className="mobile-result"><ResultSummary value={result} /></div><ResultDetails value={result} /><div className="form-footer"><button className="text-button" onClick={() => { transition(context?.eligibility.status === 'eligible' ? 1 : 0); setResult(undefined); }}><ArrowLeft size={15} />{t('edit')}</button><button className="button secondary" onClick={() => { resetPlan(method, true); form.reset(blank); }}><RotateCcw size={15} />{t('startAgain')}</button></div></div>;
 
   return <div className="app-shell">
-    <aside className="sidebar"><a className="brand" href="#" onClick={e => { e.preventDefault(); navigate('calculator'); }}><img src="/icon.svg" alt="" /><span>{t('appName')}<small>{t('brandSubtitle')}</small></span></a><p className="sidebar-label">{t('toolkit')}</p><nav>{navItems.map(item => <button key={item.key} className={view === item.key ? 'nav-item active' : 'nav-item'} onClick={() => navigate(item.key)}><item.icon size={18} /><span>{t(item.key)}</span>{view === item.key && <ChevronRight size={15} />}</button>)}</nav><div className="sidebar-bottom"><span className="support-mark"><Leaf size={21} /></span><p>{t('tagline')}</p><span className="country-dot" />{t('madeFor')}</div></aside>
+    <aside className="sidebar"><a className="brand" href="#" onClick={e => { e.preventDefault(); navigate('calculator'); }}><img src="/icon.svg" alt="E9 Mate Myanmar" /><span>{t('appName')}<small>{t('brandSubtitle')}</small></span></a><p className="sidebar-label">{t('toolkit')}</p><nav>{navItems.map(item => <button key={item.key} className={view === item.key ? 'nav-item active' : 'nav-item'} onClick={() => navigate(item.key)}><item.icon size={18} /><span>{t(item.key)}</span>{view === item.key && <ChevronRight size={15} />}</button>)}</nav><div className="sidebar-bottom"><span className="support-mark"><Leaf size={21} /></span><p>{t('tagline')}</p><span className="country-dot" />{t('madeFor')}</div></aside>
     <div className="workspace"><header className="topbar"><span className="breadcrumb">{t('toolkit')}<ChevronRight size={12} /><strong>{t(view)}</strong></span><span className="mobile-brand">{t('appName')}</span><div className="topbar-actions"><span className="country"><span className="korea-flag" aria-hidden="true">🇰🇷</span>{t('country')}</span><div className="language-toggle" aria-label={t('language')}><button onClick={() => void i18n.changeLanguage('en')} aria-pressed={i18n.language === 'en'}>EN</button><button onClick={() => void i18n.changeLanguage('my')} aria-pressed={i18n.language === 'my'}>မြန်မာ</button></div></div></header>
       <nav className="mobile-nav">{navItems.map(item => <button key={item.key} className={view === item.key ? 'active' : ''} onClick={() => navigate(item.key)}><item.icon size={16} />{t(item.key)}</button>)}</nav>
       <main>
@@ -205,7 +206,8 @@ export default function App() {
             <div className="form-panel" ref={panelRef} key={step}>{error && <div id="request-error" tabIndex={-1} className="error-banner" role="alert">{t(error)}</div>}{panel}</div>
           </section><div className="bottom-notes"><span><LockKeyhole size={14} />{t('privacySub')}</span><span>{t('connection')}</span></div></div>
           <aside className="estimate-aside"><section className={`estimate-card ${result ? 'has-result' : ''}`}>{result ? <ResultSummary value={result} /> : <><div className="estimate-top"><span className="eyebrow">{t('estimateTitle')}</span><Wallet size={17} /></div><div className="empty-amount">₩ <span>— — —</span></div><div className="empty-rule" /><h2>{t('placeholderTitle')}</h2><p>{t('placeholderSub')}</p><ol className="estimate-checklist">{['step1', 'step2', 'step3'].map((s, i) => <li key={s} className={step > i ? 'done' : ''}><span>{step > i ? <Check size={12} /> : i + 1}</span>{t(s)}</li>)}</ol><div className="result-trust"><ShieldCheck size={15} />{t('basedOn')}</div></>}</section><div className="privacy-card"><div className="privacy-icon"><LockKeyhole size={17} /></div><div><h3>{t('privacyTitle')}</h3><p>{t('privacySub')}</p></div></div><Sources /></aside></div>
-        </> : <Info view={view} onBack={() => navigate('calculator')} />}
+        </> : view !== 'salaryNav' ? <Info view={view} onBack={() => navigate('calculator')} /> : null}
+        <SalaryEstimate active={view === 'salaryNav'} offline={offline} />
         <footer><span><Leaf size={13} />{t('footer')}</span><span>ထွယ်ဂျီဂွမ်Caculator</span></footer>
       </main>
     </div>

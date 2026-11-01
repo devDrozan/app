@@ -1,6 +1,6 @@
 # ထွယ်ဂျီဂွမ်Caculator — Web / PWA
 
-Web severance calculator for E-9 workers in South Korea, available in English and Burmese with an installable PWA shell and bundled Myanmar fonts. It estimates Normal statutory severance, DB baselines, and DC required contributions in gross KRW before tax.
+Web severance and work-time salary calculator for E-9 workers in South Korea, available in English and Burmese with an installable PWA shell and bundled Myanmar fonts. It estimates Normal statutory severance, DB baselines, and DC required contributions in gross KRW before tax.
 
 ## Using the calculator
 
@@ -53,4 +53,12 @@ npm run typecheck
 
 Generated types live in `src/api/schema.d.ts`.
 
-Production builds cache app assets and explanatory guides for offline use. Financial requests and responses are not cached. Calculations need a connection. Salary data is held in memory; only `e9-language` is stored. Service-worker updates require an explicit reload so active entries are not silently discarded.
+Production builds cache app assets and explanatory guides for offline use. Financial requests and responses are not cached. Calculations need a connection. Severance inputs and all results stay in session memory. Language and salary-module appearance preferences are stored locally; explicitly saved salary-module work records and monthly pay settings use IndexedDB as described below. Service-worker updates require an explicit reload so active entries are not silently discarded.
+
+## Salary estimates and local work records
+
+Choose **Salary Estimate from Work Time** to enter monthly pay settings and daily normal, overtime, and overlapping night hours. The calendar and date-list alternative work offline. **Save month** stores that month's settings and records in this browser's IndexedDB after acknowledging the storage notice. Unsaved changes remain only in the current page session; save before closing. New months copy the latest earlier settings without changing existing months. Use Delete month or Delete all records to remove saved data. Browser-data clearing also removes these records; no cloud backup or sync is provided.
+
+Calculate submits only the selected month to `POST /v1/salary-estimates` on the configured API. All pay calculations run on the server and require connectivity. Results stay in session memory and disappear when inputs change. Financial requests/responses are never service-worker cached. The normal weekday hourly rate is reference-only: the full monthly base covers those hours. Weekend rates are full rates and night premiums are additional. Estimates exclude tax, insurance, absence/partial-month deductions, public-holiday rules, and automatic statutory rates. This module's local storage does not change the severance calculator's session-only policy.
+
+The module supports English/Burmese, Light/Dark appearance, and explicit save, error, and retry states. Salary appearance is a local preference; the rest of the web calculator retains its existing styling.

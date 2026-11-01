@@ -22,3 +22,27 @@ test('production PWA caches guides and assets without financial responses', asyn
   await expect(page.getByRole('button', { name: 'Continue to wages' })).toBeDisabled();
   await context.setOffline(false);
 });
+test('salary requests stay out of PWA caches and local records survive offline reload', async ({ page, context }) => {
+  await page.goto('/');
+  await page.evaluate(async () => { await navigator.serviceWorker.ready; });
+  await page.reload();
+  await page.getByRole('button', { name: 'Salary Estimate from Work Time', exact: true }).filter({ visible: true }).click();
+  await expect(page.getByRole('button', { name: 'Save month', exact: true })).toBeEnabled();
+  await page.locator('[id="salary-settings.basicSalary"]').fill('23456');
+  await page.getByLabel('I understand and want to save these records on this device.').check();
+  await page.getByRole('button', { name: 'Save month', exact: true }).click();
+  await expect(page.getByText('Month saved on this device.', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Calculate monthly estimate' }).click();
+  await expect(page.locator('.salary-amount')).toHaveText('₩23,456');
+  const financialCaches = await page.evaluate(async () => {
+    const entries = await Promise.all((await caches.keys()).map(async name => (await (await caches.open(name)).keys()).map(request => request.url)));
+    return entries.flat().filter(url => /\/(api|v1)\//.test(url));
+  });
+  expect(financialCaches).toEqual([]);
+  await context.setOffline(true); await page.reload();
+  await page.getByRole('button', { name: 'Salary Estimate from Work Time', exact: true }).filter({ visible: true }).click();
+  await expect(page.locator('[id="salary-settings.basicSalary"]')).toHaveValue('23456');
+  await expect(page.locator('.salary-amount')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Calculate monthly estimate' })).toBeDisabled();
+  await context.setOffline(false);
+});
